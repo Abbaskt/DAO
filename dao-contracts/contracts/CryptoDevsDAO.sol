@@ -16,4 +16,13 @@ interface CrytoDevsNFT {
 
 contract CryptoDevsDAO {
 
+    struct Proposal {
+        uint256 nftTokenId;
+        uint256 deadline;
+        uint256 upVotes;
+        uint256 downVotes;
+        bool executed;
+        mapping(uint256 => bool) voters; 
+    }
+
 }
