@@ -81,7 +81,7 @@ export default function Home() {
     }
   }
 
-  const getDAOContractInstance = async(providerOrSigner) => {
+  const getDAOContractInstance = (providerOrSigner) => {
     return new Contract(
       CRYPTODEVS_DAO_CONTRACT_ADDRESS,
       CRYPTODEVS_DAO_ABI,
@@ -91,7 +91,7 @@ export default function Home() {
 
   const getNumProposalInDAO = async() => {
     try{
-      const provider = await getProviderOrSigner(true);
+      const provider = await getProviderOrSigner();
       const contract = getDAOContractInstance(provider);
       const daoNumProposals = await contract.numProposals();
 
@@ -103,7 +103,7 @@ export default function Home() {
 
   const fetchProposalById = async(id) => {
     try{
-      const provider = await getProviderOrSigner(true);
+      const provider = await getProviderOrSigner();
       const daoContract = getDAOContractInstance(provider);
       const proposal = await daoContract.proposals(id);
       const parsedProposal = {
@@ -145,6 +145,37 @@ export default function Home() {
       await txn.wait();
       setLoading(false);
     }catch(err){
+      console.error(err);
+    }
+  }
+
+  const executeProposal = async(proposalId) => {
+    try{
+      const signer = await getProviderOrSigner(true);
+      const daoConract = getDAOContractInstance(signer);
+      const txn = await daoConract.executeProposal(proposalId)
+      setLoading(true);
+      await txn.wait();
+      setLoading(false);
+      await fetchAllProposals();
+    }catch(err){
+      console.error(err);
+    }
+  }
+
+  const voteOnProposal = async(proposalId, _vote) => {
+    try{
+      const signer = await getProviderOrSigner(true);
+      const daoContract = getDAOContractInstance(signer);
+      
+      let vote = _vote === "downVote"? 0: 1;
+      console.log(vote)
+      const txn = await daoContract.voteOnProposal(proposalId, vote);
+      setLoading(true);
+      await txn.wait();
+      setLoading(false);
+      await fetchAllProposals();
+    }catch(err) {
       console.error(err);
     }
   }
@@ -217,7 +248,7 @@ export default function Home() {
     } else {
       return(
         <div>
-          {proposals.map((p, index)=> {
+          {proposals.map((p, index)=> (
             <div key={index} className={styles.proposalCard}>
               <p>Proposal ID: {p.proposalId}</p>
               <p>Fake NFT to Purchase: {p.nftTokenId}</p>
@@ -228,12 +259,12 @@ export default function Home() {
               {p.deadline.getTime() > Date.now() && !p.executed ? (
                 <div className={styles.flex}>
                   <button className={styles.button2}
-                    onClick={() => console.log("clicked button")}
+                    onClick={() => voteOnProposal(p.proposalId, "upVote")}
                     >
                     Up vote
                   </button>
                   <button className={styles.button2}
-                    onClick={() => console.log("clicked button")}
+                    onClick={() => voteOnProposal(p.proposalId, "downVote")}
                     >
                     Down vote
                   </button>
@@ -241,7 +272,7 @@ export default function Home() {
               ): p.deadline.getTime() < Date.now() && !p.executed ? (
                 <div className={styles.flex}>
                   <button className={styles.button2}
-                    onClick={() => console.log("clicked button")}
+                    onClick={() => executeProposal(p.proposalId)}
                     >
                     Execute Proposal{" "}
                     {p.upVotes > p.downVotes ? "(Yessss)": "(Nooo)"}
@@ -251,7 +282,7 @@ export default function Home() {
                 <div className={styles.description}>Proposal executed</div>
               )}
               </div>
-          })}
+          ))}
         </div>
       )
     }
