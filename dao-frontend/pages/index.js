@@ -20,6 +20,7 @@ export default function Home() {
   const [proposals, setProposals] = useState([]);
   const [walletConnected, setWalletConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fakenNftTokenId, setFakeNftTokenId] = useState("")
   const web3ModalRef = useRef();
 
   const getProviderOrSigner = async(needSigner= false) => {
@@ -135,6 +136,19 @@ export default function Home() {
     }
   }
 
+  const createProposal = async() => {
+    try{
+      const signer = await getProviderOrSigner(true);
+      const daoContract = getDAOContractInstance(signer);
+      const txn = await daoContract.createProposal(fakenNftTokenId);
+      setLoading(true);
+      await txn.wait();
+      setLoading(false);
+    }catch(err){
+      console.error(err);
+    }
+  }
+
   useEffect(()=> {
     if(!walletConnected) {
       web3ModalRef.current = new Web3Modal({
@@ -156,6 +170,36 @@ export default function Home() {
       fetchAllProposals();
     }
   }, [selectedTab])
+
+  function renderCreateProposalsTab() {
+    if (loading) {
+      return(
+        <div className={styles.description}>
+          Loading... Waiting for transation...
+        </div>
+      )
+    } else if (nftBalance === 0) {
+      return(
+        <div className={styles.description}>
+          You do not own enough CryptoDevs NFTs. <br/>
+          <b>You cannot create or vote on proposals</b>
+        </div>
+      );
+    } else {
+      return(
+        <div className={styles.container}>
+          <label>Fake NFT Token ID to Purchase: </label>
+          <input 
+            placeholder='0'
+            type={"number"}
+            onChange={(e)=> setFakeNftTokenId(e.target.value)}/>
+            <button className={styles.button2} onClick={createProposal}>
+              Create
+            </button>
+        </div>
+      )
+    }
+  }
 
   function renderViewProposalsTab() {
     if (loading) {
@@ -215,7 +259,7 @@ export default function Home() {
 
   function renderTabs() {
     if (selectedTab === "Create Proposal") {
-      return ;
+      return renderCreateProposalsTab();
     } else if (selectedTab === "View Proposals"){
       return renderViewProposalsTab()
     }
